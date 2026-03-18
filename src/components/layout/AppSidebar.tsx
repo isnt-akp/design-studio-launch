@@ -1,28 +1,31 @@
-import { Home, CreditCard, Receipt, PiggyBank, TrendingUp, Shield, Calculator, Landmark, Target, Menu } from "lucide-react";
+import { Home, CreditCard, Receipt, PiggyBank, TrendingUp, Shield, Calculator, Landmark, Target, Menu, FileText, Wallet, ScrollText } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Dashboard", path: "/" },
-  { icon: CreditCard, label: "Wallet", path: "/wallet" },
-  { icon: Receipt, label: "Spending", path: "/spending" },
+  { icon: Receipt, label: "Budgeting", path: "/budgeting" },
   { icon: PiggyBank, label: "Savings", path: "/savings" },
-  { icon: TrendingUp, label: "Investments", path: "/investments" },
+  { icon: TrendingUp, label: "Investments", path: "/investing" },
+  { icon: CreditCard, label: "Debt", path: "/debt" },
   { icon: Calculator, label: "Tax", path: "/tax" },
   { icon: Shield, label: "Insurance", path: "/insurance" },
   { icon: Landmark, label: "Retirement", path: "/retirement" },
+  { icon: FileText, label: "Estate", path: "/estate" },
   { icon: Target, label: "Goals", path: "/goals" },
+  { icon: Wallet, label: "Wallet", path: "/wallet" },
+  { icon: ScrollText, label: "Spending", path: "/spending" },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden lg:flex flex-col w-[72px] bg-card-surface h-screen sticky top-0 items-center py-6 gap-2">
-      <div className="mb-6 w-10 h-10 rounded-card bg-primary flex items-center justify-center">
+    <aside className="hidden lg:flex flex-col w-[72px] bg-card-surface h-screen sticky top-0 items-center py-6 gap-1 overflow-y-auto">
+      <div className="mb-4 w-10 h-10 rounded-card bg-primary flex items-center justify-center shrink-0">
         <span className="text-primary-foreground font-bold text-lg">A</span>
       </div>
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-0.5 flex-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -37,13 +40,13 @@ export function AppSidebar() {
               )}
               title={item.label}
             >
-              <item.icon size={20} />
+              <item.icon size={18} />
             </NavLink>
           );
         })}
       </nav>
-      <button className="w-12 h-12 rounded-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-        <Menu size={20} />
+      <button className="w-12 h-12 rounded-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0">
+        <Menu size={18} />
       </button>
     </aside>
   );
