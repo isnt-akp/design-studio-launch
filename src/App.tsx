@@ -7,6 +7,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Wallet from "./pages/Wallet";
 import Spending from "./pages/Spending";
+import Budgeting from "./pages/Budgeting";
+import Saving from "./pages/Saving";
+import Investing from "./pages/Investing";
+import DebtManagement from "./pages/DebtManagement";
+import TaxPlanning from "./pages/TaxPlanning";
+import Insurance from "./pages/Insurance";
+import Retirement from "./pages/Retirement";
+import EstatePlanning from "./pages/EstatePlanning";
+import GoalPlanning from "./pages/GoalPlanning";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +31,15 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/wallet" element={<Wallet />} />
             <Route path="/spending" element={<Spending />} />
+            <Route path="/budgeting" element={<Budgeting />} />
+            <Route path="/savings" element={<Saving />} />
+            <Route path="/investing" element={<Investing />} />
+            <Route path="/debt" element={<DebtManagement />} />
+            <Route path="/tax" element={<TaxPlanning />} />
+            <Route path="/insurance" element={<Insurance />} />
+            <Route path="/retirement" element={<Retirement />} />
+            <Route path="/estate" element={<EstatePlanning />} />
+            <Route path="/goals" element={<GoalPlanning />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
