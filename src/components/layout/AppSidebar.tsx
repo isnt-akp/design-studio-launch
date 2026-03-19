@@ -1,4 +1,4 @@
-import { Home, CreditCard, Receipt, PiggyBank, TrendingUp, Shield, Calculator, Landmark, Target, Menu, FileText, Wallet, ScrollText } from "lucide-react";
+import { Home, Receipt, PiggyBank, TrendingUp, CreditCard, Calculator, Shield, Landmark, FileText, Target, Menu } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,6 @@ const navItems = [
   { icon: Landmark, label: "Retirement", path: "/retirement" },
   { icon: FileText, label: "Estate", path: "/estate" },
   { icon: Target, label: "Goals", path: "/goals" },
-  { icon: Wallet, label: "Wallet", path: "/wallet" },
-  { icon: ScrollText, label: "Spending", path: "/spending" },
 ];
 
 export function AppSidebar() {
@@ -45,9 +43,6 @@ export function AppSidebar() {
           );
         })}
       </nav>
-      <button className="w-12 h-12 rounded-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0">
-        <Menu size={18} />
-      </button>
     </aside>
   );
 }

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Plus, AlertTriangle, TrendingDown, CreditCard, Home, Car, GraduationCap, Smartphone, MoreVertical } from "lucide-react";
+import { Plus, AlertTriangle, MoreVertical, CreditCard, Smartphone, Sliders } from "lucide-react";
+import { formatINR } from "@/store/financeStore";
 
 const fade = (delay = 0) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay } });
 
@@ -22,6 +23,85 @@ const bnpl = [
 
 const creditScore = { score: 756, rating: "Good", target: 780 };
 
+// Prepay vs Invest Calculator
+function PrepayVsInvestCalc() {
+  const [amount, setAmount] = useState(100000);
+  const [loanRate, setLoanRate] = useState(8.5);
+  const [taxBenefit, setTaxBenefit] = useState(true);
+  const [equityReturn, setEquityReturn] = useState(12);
+  const [horizon, setHorizon] = useState(7);
+
+  const effectiveLoanRate = taxBenefit ? loanRate * 0.7 : loanRate; // 30% tax bracket
+  const prepayBenefit = Math.round(amount * (effectiveLoanRate / 100) * horizon);
+  const investBenefit = Math.round(amount * Math.pow(1 + equityReturn / 100, horizon) - amount);
+  const better = investBenefit > prepayBenefit ? "invest" : "prepay";
+
+  return (
+    <motion.div {...fade(0.2)} className="glass-card rounded-card p-5 space-y-4">
+      <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+        <Sliders size={14} className="text-info" /> Prepay vs Invest Calculator
+      </h4>
+
+      <div className="space-y-3">
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Lump sum amount</span>
+            <span className="font-mono text-foreground">{formatINR(amount)}</span>
+          </div>
+          <input type="range" min={50000} max={500000} step={10000} value={amount}
+            onChange={(e) => setAmount(parseInt(e.target.value))} className="w-full accent-primary h-1.5" />
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Loan rate</span>
+            <span className="font-mono text-foreground">{loanRate}%</span>
+          </div>
+          <input type="range" min={6} max={15} step={0.5} value={loanRate}
+            onChange={(e) => setLoanRate(parseFloat(e.target.value))} className="w-full accent-primary h-1.5" />
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Expected equity return</span>
+            <span className="font-mono text-foreground">{equityReturn}%</span>
+          </div>
+          <input type="range" min={8} max={18} step={0.5} value={equityReturn}
+            onChange={(e) => setEquityReturn(parseFloat(e.target.value))} className="w-full accent-primary h-1.5" />
+        </div>
+        <div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Time horizon</span>
+            <span className="font-mono text-foreground">{horizon} years</span>
+          </div>
+          <input type="range" min={1} max={20} step={1} value={horizon}
+            onChange={(e) => setHorizon(parseInt(e.target.value))} className="w-full accent-primary h-1.5" />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <input type="checkbox" checked={taxBenefit} onChange={(e) => setTaxBenefit(e.target.checked)}
+            className="w-3.5 h-3.5 accent-primary" />
+          Has Sec 24/80C tax benefit (30% slab)
+        </label>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className={`p-3 rounded-button border ${better === "prepay" ? "border-accent/50 bg-accent/5" : "border-border bg-muted"}`}>
+          <p className="text-xs text-muted-foreground">Prepay Loan</p>
+          <p className="font-mono text-sm font-semibold text-foreground">{formatINR(prepayBenefit)} saved</p>
+          <p className="text-[10px] text-success">Zero risk · Guaranteed</p>
+        </div>
+        <div className={`p-3 rounded-button border ${better === "invest" ? "border-accent/50 bg-accent/5" : "border-border bg-muted"}`}>
+          <p className="text-xs text-muted-foreground">Invest in Equity</p>
+          <p className="font-mono text-sm font-semibold text-foreground">{formatINR(investBenefit)} gain</p>
+          <p className="text-[10px] text-warning">Market risk</p>
+        </div>
+      </div>
+      <p className="text-xs text-accent-light text-center">
+        {better === "invest" ? "Investing wins" : "Prepaying wins"} by {formatINR(Math.abs(investBenefit - prepayBenefit))} 
+        {" "}· Hybrid: 50/50 split recommended ✅
+      </p>
+    </motion.div>
+  );
+}
+
 const DebtManagement = () => {
   const totalDebt = loans.reduce((s, l) => s + l.outstanding, 0) + creditCards.reduce((s, c) => s + c.outstanding, 0) + bnpl.reduce((s, b) => s + b.outstanding, 0);
   const totalEmi = loans.reduce((s, l) => s + l.emi, 0);
@@ -39,11 +119,11 @@ const DebtManagement = () => {
       <motion.div {...fade()} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Total Outstanding</p>
-          <p className="font-mono text-lg font-semibold text-destructive">₹{(totalDebt / 100000).toFixed(1)}L</p>
+          <p className="font-mono text-lg font-semibold text-destructive">{formatINR(totalDebt, true)}</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Monthly EMIs</p>
-          <p className="font-mono text-lg font-semibold text-foreground">₹{totalEmi.toLocaleString("en-IN")}</p>
+          <p className="font-mono text-lg font-semibold text-foreground">{formatINR(totalEmi)}</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Credit Score</p>
@@ -52,7 +132,7 @@ const DebtManagement = () => {
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">BNPL Due</p>
-          <p className="font-mono text-lg font-semibold text-warning">₹{bnpl.reduce((s, b) => s + b.outstanding, 0).toLocaleString("en-IN")}</p>
+          <p className="font-mono text-lg font-semibold text-warning">{formatINR(bnpl.reduce((s, b) => s + b.outstanding, 0))}</p>
         </div>
       </motion.div>
 
@@ -73,43 +153,27 @@ const DebtManagement = () => {
                   <MoreVertical size={16} className="text-muted-foreground" />
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">EMI: <span className="font-mono text-foreground">₹{l.emi.toLocaleString("en-IN")}</span></span>
+                  <span className="text-muted-foreground">EMI: <span className="font-mono text-foreground">{formatINR(l.emi)}</span></span>
                   <span className="text-muted-foreground">Tax: <span className="text-accent-light">{l.taxBenefit}</span></span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-primary-light rounded-full" style={{ width: `${paidPct}%` }} />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span className="font-mono">₹{l.outstanding.toLocaleString("en-IN")} remaining</span>
+                  <span className="font-mono">{formatINR(l.outstanding)} remaining</span>
                   <span>{paidPct}% paid</span>
                 </div>
               </motion.div>
             );
           })}
 
-          {/* Prepay vs Invest */}
-          <motion.div {...fade(0.2)} className="glass-card rounded-card p-4 border border-info/30 space-y-2">
-            <h4 className="text-sm font-semibold text-info">💡 Prepay vs Invest Decision</h4>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2 bg-muted rounded-button">
-                <p className="text-muted-foreground">Prepay Home Loan</p>
-                <p className="font-mono text-foreground">Guaranteed 6% saving</p>
-                <p className="text-success">Zero risk</p>
-              </div>
-              <div className="p-2 bg-muted rounded-button">
-                <p className="text-muted-foreground">Invest in Equity</p>
-                <p className="font-mono text-foreground">Expected 10% return</p>
-                <p className="text-warning">Market risk</p>
-              </div>
-            </div>
-            <p className="text-[10px] text-accent-light text-center">Hybrid: Prepay 50% + Invest 50% ✅</p>
-          </motion.div>
+          <PrepayVsInvestCalc />
         </div>
 
         {/* Credit Cards + BNPL */}
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">Credit Cards</h3>
-          {creditCards.map((c, i) => (
+          {creditCards.map((c) => (
             <motion.div key={c.name} {...fade(0.1)} className="glass-card rounded-card p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <CreditCard size={20} className="text-secondary" />
@@ -119,15 +183,15 @@ const DebtManagement = () => {
                 </div>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Outstanding: <span className="font-mono text-foreground">₹{c.outstanding.toLocaleString("en-IN")}</span></span>
-                <span className="text-muted-foreground">Min Due: <span className="font-mono text-warning">₹{c.minDue.toLocaleString("en-IN")}</span></span>
+                <span className="text-muted-foreground">Outstanding: <span className="font-mono text-foreground">{formatINR(c.outstanding)}</span></span>
+                <span className="text-muted-foreground">Min Due: <span className="font-mono text-warning">{formatINR(c.minDue)}</span></span>
               </div>
               <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-secondary rounded-full" style={{ width: `${Math.round((c.outstanding / c.limit) * 100)}%` }} />
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-destructive">Interest if not paid: {c.interest}</span>
-                <span className="text-accent-light">Cashback: ₹{c.cashback}</span>
+                <span className="text-accent-light">Cashback: {formatINR(c.cashback)}</span>
               </div>
             </motion.div>
           ))}
@@ -141,7 +205,7 @@ const DebtManagement = () => {
                 <p className="text-xs text-muted-foreground">Due: {b.due}</p>
               </div>
               <div className="text-right">
-                <p className="font-mono text-sm text-foreground">₹{b.outstanding.toLocaleString("en-IN")}</p>
+                <p className="font-mono text-sm text-foreground">{formatINR(b.outstanding)}</p>
                 {!b.autoDebit && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warning/20 text-warning">Manual ⚠️</span>}
               </div>
             </motion.div>

@@ -5,8 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
-import Wallet from "./pages/Wallet";
-import Spending from "./pages/Spending";
 import Budgeting from "./pages/Budgeting";
 import Saving from "./pages/Saving";
 import Investing from "./pages/Investing";
@@ -29,8 +27,6 @@ const App = () => (
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/wallet" element={<Wallet />} />
-            <Route path="/spending" element={<Spending />} />
             <Route path="/budgeting" element={<Budgeting />} />
             <Route path="/savings" element={<Saving />} />
             <Route path="/investing" element={<Investing />} />
