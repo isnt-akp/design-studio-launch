@@ -10,10 +10,9 @@ const creditScore = { score: 756, rating: "Good", target: 780 };
 // Home Loan Prepayment Calculator (Scenario 4.1)
 function HomeLoanPrepayCalc() {
   const loans = useFinanceStore(s => s.loans);
+  const [prepayAmount, setPrepayAmount] = useState(100000);
   const homeLoan = loans.find(l => l.type === "home");
   if (!homeLoan) return null;
-
-  const [prepayAmount, setPrepayAmount] = useState(100000);
   const r = homeLoan.rate / 100 / 12;
   const currentTenure = parseInt(homeLoan.tenure);
 
