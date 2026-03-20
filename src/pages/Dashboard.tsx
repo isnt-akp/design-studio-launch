@@ -1,10 +1,7 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowUpRight, Target, Shield, CreditCard, PiggyBank, Landmark } from "lucide-react";
+import { TrendingUp, TrendingDown, CreditCard } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
-import {
-  assets, liabilities, totalAssets, totalLiabilities, netWorth,
-  netWorthTrend, incomeStreams, monthlyExpenses, monthlySaved, savingsRate, formatINR
-} from "@/store/financeStore";
+import { useFinanceStore, formatINR } from "@/store/financeStore";
 
 const fade = (d = 0) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay: d } });
 
@@ -24,9 +21,27 @@ const chartTooltipStyle = {
 };
 
 const Dashboard = () => {
-  const prevNetWorth = netWorthTrend[netWorthTrend.length - 2]?.netWorth || netWorth;
-  const monthlyChange = netWorth - prevNetWorth;
-  const monthlyChangePct = ((monthlyChange / prevNetWorth) * 100).toFixed(1);
+  const assets = useFinanceStore(s => s.assets);
+  const liabilities = useFinanceStore(s => s.liabilities);
+  const totalAssets = useFinanceStore(s => s.totalAssets)();
+  const totalLiabilities = useFinanceStore(s => s.totalLiabilities)();
+  const nw = useFinanceStore(s => s.netWorth)();
+  const netWorthTrendData = useFinanceStore(s => s.netWorthTrend);
+  const incomeStreams = useFinanceStore(s => s.incomeStreams);
+  const monthlyExpenses = useFinanceStore(s => s.monthlyExpenses);
+  const monthlySaved = useFinanceStore(s => s.monthlySaved)();
+  const sr = useFinanceStore(s => s.savingsRate)();
+  const totalReceivables = useFinanceStore(s => s.totalReceivables)();
+  const totalPayables = useFinanceStore(s => s.totalPayables)();
+
+  // Use live data for current month in trend
+  const trend = netWorthTrendData.map((t, i) =>
+    i === netWorthTrendData.length - 1 ? { ...t, assets: totalAssets, liabilities: totalLiabilities, netWorth: nw } : t
+  );
+
+  const prevNetWorth = trend[trend.length - 2]?.netWorth || nw;
+  const monthlyChange = nw - prevNetWorth;
+  const monthlyChangePct = prevNetWorth ? ((monthlyChange / prevNetWorth) * 100).toFixed(1) : "0";
 
   return (
     <div className="space-y-6">
@@ -40,14 +55,14 @@ const Dashboard = () => {
         <p className="text-sm text-muted-foreground">Total Net Worth</p>
         <div className="flex items-baseline gap-3 flex-wrap">
           <span className="text-4xl lg:text-5xl font-bold text-foreground tracking-tight font-mono">
-            {formatINR(netWorth, true)}
+            {formatINR(nw, true)}
           </span>
           <span className={`flex items-center gap-1 text-sm font-mono ${monthlyChange >= 0 ? "text-success" : "text-destructive"}`}>
             {monthlyChange >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
             {monthlyChange >= 0 ? "+" : ""}{formatINR(monthlyChange, true)} ({monthlyChangePct}%) this month
           </span>
         </div>
-        <div className="flex gap-6 pt-2 text-sm">
+        <div className="flex gap-6 pt-2 text-sm flex-wrap">
           <div>
             <span className="text-muted-foreground">Assets: </span>
             <span className="font-mono text-success">{formatINR(totalAssets, true)}</span>
@@ -56,6 +71,18 @@ const Dashboard = () => {
             <span className="text-muted-foreground">Liabilities: </span>
             <span className="font-mono text-destructive">{formatINR(totalLiabilities, true)}</span>
           </div>
+          {totalReceivables > 0 && (
+            <div>
+              <span className="text-muted-foreground">Receivables (IOUs): </span>
+              <span className="font-mono text-success">+{formatINR(totalReceivables, true)}</span>
+            </div>
+          )}
+          {totalPayables > 0 && (
+            <div>
+              <span className="text-muted-foreground">Payables: </span>
+              <span className="font-mono text-warning">-{formatINR(totalPayables, true)}</span>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -75,7 +102,7 @@ const Dashboard = () => {
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Savings Rate</p>
-          <p className="font-mono text-lg font-semibold text-success">{savingsRate}%</p>
+          <p className="font-mono text-lg font-semibold text-success">{sr}%</p>
           <p className="text-[10px] text-success">Target &gt;30% ✅</p>
         </div>
       </motion.div>
@@ -85,7 +112,7 @@ const Dashboard = () => {
         <h3 className="text-sm font-semibold text-foreground">Net Worth Trend</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={netWorthTrend}>
+            <AreaChart data={trend}>
               <defs>
                 <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(160, 84%, 39%)" stopOpacity={0.3} />
@@ -94,15 +121,10 @@ const Dashboard = () => {
               </defs>
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "hsl(218, 11%, 65%)", fontSize: 11 }} />
               <YAxis hide />
-              <Tooltip contentStyle={chartTooltipStyle}
-                formatter={(value: number) => formatINR(value, true)} />
+              <Tooltip contentStyle={chartTooltipStyle} formatter={(value: number) => formatINR(value, true)} />
               <Area type="monotone" dataKey="netWorth" stroke="hsl(160, 84%, 39%)" strokeWidth={2} fill="url(#nwGrad)" name="Net Worth" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
-        <div className="flex gap-6 text-xs text-muted-foreground">
-          <span>3-month growth: <span className="font-mono text-success">+{formatINR(netWorth - netWorthTrend[2].netWorth, true)}</span></span>
-          <span>Avg monthly: <span className="font-mono text-foreground">+{formatINR(Math.round((netWorth - netWorthTrend[0].netWorth) / 6), true)}</span></span>
         </div>
       </motion.div>
 
@@ -174,7 +196,6 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-            <p className="text-[10px] text-muted-foreground">⚠️ Salary = 49% — Target &lt;50% for financial independence</p>
           </div>
         </motion.div>
       </div>

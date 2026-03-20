@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Plus, TrendingUp, TrendingDown, MoreVertical, ArrowUpRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useFinanceStore, formatINR } from "@/store/financeStore";
 
 const fade = (delay = 0) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay } });
 
@@ -12,23 +13,15 @@ const allocation = [
 ];
 const totalPortfolio = allocation.reduce((s, a) => s + a.value, 0);
 
-const holdings = [
-  { name: "UTI Nifty 50 Index Fund", type: "SIP", invested: 360000, current: 432000, xirr: 15.8, goal: "Retirement", platform: "Kuvera" },
-  { name: "Mirae Asset ELSS Tax Saver", type: "ELSS", invested: 150000, current: 182000, xirr: 12.2, goal: "Tax Saving", platform: "Groww" },
-  { name: "HDFC Bank", type: "Stock", invested: 49500, current: 54600, xirr: 10.3, goal: "Growth", platform: "Zerodha" },
-  { name: "PPF", type: "PPF", invested: 480000, current: 520000, xirr: 7.1, goal: "Retirement", platform: "SBI" },
-  { name: "SGB 2024-25", type: "SGB", invested: 71500, current: 84000, xirr: 11.5, goal: "Diversification", platform: "RBI" },
-  { name: "NPS Tier 1", type: "NPS", invested: 240000, current: 270000, xirr: 12.5, goal: "Retirement", platform: "HDFC Pension" },
-  { name: "Apple Inc (AAPL)", type: "US Stock", invested: 72187, current: 81412, xirr: 12.8, goal: "International", platform: "Vested" },
-  { name: "HDFC Corporate Bond Fund", type: "Debt MF", invested: 300000, current: 328000, xirr: 6.2, goal: "Conservative", platform: "Direct" },
-];
-
 const stepUpProjection = { base: 15000, stepUp: 10, withoutStepUp: "₹1.49 Cr", withStepUp: "₹3.24 Cr" };
 
 const Investing = () => {
+  const investments = useFinanceStore(s => s.investments);
+  const goals = useFinanceStore(s => s.goals);
   const [tab, setTab] = useState<"holdings" | "allocation" | "insights">("holdings");
-  const totalInvested = holdings.reduce((s, h) => s + h.invested, 0);
-  const totalCurrent = holdings.reduce((s, h) => s + h.current, 0);
+
+  const totalInvested = investments.reduce((s, h) => s + h.invested, 0);
+  const totalCurrent = investments.reduce((s, h) => s + h.current, 0);
   const totalGain = totalCurrent - totalInvested;
   const totalGainPct = ((totalGain / totalInvested) * 100).toFixed(1);
 
@@ -41,27 +34,25 @@ const Investing = () => {
         </button>
       </div>
 
-      {/* Summary */}
       <motion.div {...fade()} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Total Invested</p>
-          <p className="font-mono text-lg font-semibold text-foreground">₹{(totalInvested / 100000).toFixed(1)}L</p>
+          <p className="font-mono text-lg font-semibold text-foreground">{formatINR(totalInvested, true)}</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Current Value</p>
-          <p className="font-mono text-lg font-semibold text-foreground">₹{(totalCurrent / 100000).toFixed(1)}L</p>
+          <p className="font-mono text-lg font-semibold text-foreground">{formatINR(totalCurrent, true)}</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Total Gain</p>
-          <p className="font-mono text-lg font-semibold text-success">+₹{totalGain.toLocaleString("en-IN")}</p>
+          <p className="font-mono text-lg font-semibold text-success">+{formatINR(totalGain)}</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
-          <p className="text-xs text-muted-foreground">Overall XIRR</p>
+          <p className="text-xs text-muted-foreground">Overall Return</p>
           <p className="font-mono text-lg font-semibold text-success">+{totalGainPct}%</p>
         </div>
       </motion.div>
 
-      {/* Tabs */}
       <div className="flex gap-4 border-b border-border">
         {(["holdings", "allocation", "insights"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`pb-2 text-sm capitalize transition-colors border-b-2 ${tab === t ? "text-secondary border-secondary" : "text-muted-foreground border-transparent hover:text-foreground"}`}>
@@ -72,30 +63,31 @@ const Investing = () => {
 
       {tab === "holdings" && (
         <motion.div {...fade(0.05)} className="space-y-2">
-          {holdings.map((h, i) => {
+          {investments.map((h, i) => {
             const gain = h.current - h.invested;
             const gainPct = ((gain / h.invested) * 100).toFixed(1);
             const isPositive = gain >= 0;
+            const linkedGoal = goals.find(g => g.id === h.goalId);
             return (
-              <motion.div key={h.name} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                className="glass-card rounded-card p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
-              >
+              <motion.div key={h.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                className="glass-card rounded-card p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer">
                 <div className={`w-9 h-9 rounded-button flex items-center justify-center text-xs font-bold ${
                   h.type === "SIP" || h.type === "ELSS" ? "bg-accent/20 text-accent-light" :
                   h.type === "Stock" || h.type === "US Stock" ? "bg-primary/20 text-primary-light" :
                   h.type === "SGB" ? "bg-secondary/20 text-secondary-light" :
                   "bg-muted text-muted-foreground"
-                }`}>
-                  {h.type.substring(0, 2).toUpperCase()}
-                </div>
+                }`}>{h.type.substring(0, 2).toUpperCase()}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{h.name}</p>
-                  <p className="text-xs text-muted-foreground">{h.platform} · {h.goal}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {h.platform}
+                    {linkedGoal && <span className="text-accent-light"> · 🎯 {linkedGoal.name}</span>}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-sm font-semibold text-foreground">₹{h.current.toLocaleString("en-IN")}</p>
+                  <p className="font-mono text-sm font-semibold text-foreground">{formatINR(h.current)}</p>
                   <p className={`font-mono text-xs ${isPositive ? "text-success" : "text-destructive"}`}>
-                    {isPositive ? "+" : ""}₹{gain.toLocaleString("en-IN")} ({gainPct}%)
+                    {isPositive ? "+" : ""}{formatINR(gain)} ({gainPct}%)
                   </p>
                 </div>
               </motion.div>
@@ -115,7 +107,7 @@ const Investing = () => {
                     {allocation.map((a, i) => <Cell key={i} fill={a.color} />)}
                   </Pie>
                   <Tooltip contentStyle={{ background: "hsl(220, 47%, 11%)", border: "1px solid hsl(217, 19%, 27%)", borderRadius: "8px", color: "hsl(210, 20%, 98%)", fontSize: "12px" }}
-                    formatter={(value: number) => `₹${value.toLocaleString("en-IN")}`} />
+                    formatter={(value: number) => formatINR(value)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -137,10 +129,7 @@ const Investing = () => {
           <div className="space-y-4">
             <div className="glass-card rounded-card p-5 border border-warning/30 space-y-2">
               <h4 className="text-sm font-semibold text-warning flex items-center gap-2">⚠️ Rebalancing Needed</h4>
-              <p className="text-xs text-muted-foreground">Equity is overweight at 72% (target 60%). Consider selling ₹3,00,000 equity and buying debt/gold.</p>
-              <button className="w-full h-8 rounded-button bg-warning/20 text-warning text-xs font-medium hover:bg-warning/30 transition-colors">
-                View Rebalance Plan
-              </button>
+              <p className="text-xs text-muted-foreground">Equity is overweight at 72% (target 60%). Consider selling ₹3L equity and buying debt/gold.</p>
             </div>
             <div className="glass-card rounded-card p-5 space-y-2">
               <h4 className="text-sm font-semibold text-foreground">Step-Up SIP Impact (20yr)</h4>
@@ -164,7 +153,7 @@ const Investing = () => {
         <motion.div {...fade(0.05)} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="glass-card rounded-card p-5 border border-accent/30 space-y-2">
             <h4 className="text-sm font-semibold text-accent-light flex items-center gap-2">💡 Tax-Loss Harvesting Opportunity</h4>
-            <p className="text-xs text-muted-foreground">Before March 31: Book ₹30,000 STCL to offset gains. Rebuy after 1 day (no wash sale rule in India).</p>
+            <p className="text-xs text-muted-foreground">Before March 31: Book ₹30K STCL to offset gains. Rebuy after 1 day (no wash sale rule in India).</p>
             <p className="text-xs text-foreground font-mono">Potential tax saved: <span className="text-success">₹6,000</span></p>
           </div>
           <div className="glass-card rounded-card p-5 space-y-2">
@@ -176,12 +165,12 @@ const Investing = () => {
           </div>
           <div className="glass-card rounded-card p-5 space-y-2">
             <h4 className="text-sm font-semibold text-foreground">NPS Extra Deduction</h4>
-            <p className="text-xs text-muted-foreground">80CCD(1B): ₹50,000 additional deduction exclusive to NPS — over and above 80C limit.</p>
+            <p className="text-xs text-muted-foreground">80CCD(1B): ₹50,000 additional deduction exclusive to NPS.</p>
             <p className="text-xs text-success font-mono">Tax saved at 30% slab: ₹15,600</p>
           </div>
           <div className="glass-card rounded-card p-5 space-y-2">
             <h4 className="text-sm font-semibold text-warning flex items-center gap-2">⚠️ Crypto Warning</h4>
-            <p className="text-xs text-muted-foreground">Flat 30% tax on gains + 1% TDS. No loss offset allowed. Keep under 5% of portfolio.</p>
+            <p className="text-xs text-muted-foreground">Flat 30% tax on gains + 1% TDS. No loss offset allowed.</p>
           </div>
         </motion.div>
       )}
