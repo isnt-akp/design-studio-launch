@@ -1,4 +1,4 @@
-import { Home, Receipt, PiggyBank, TrendingUp, CreditCard, Calculator, Shield, Landmark, FileText, Target, Menu } from "lucide-react";
+import { Home, Receipt, PiggyBank, TrendingUp, CreditCard, Calculator, Shield, Landmark, FileText, Target, ClipboardCheck } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,7 @@ const navItems = [
   { icon: Landmark, label: "Retirement", path: "/retirement" },
   { icon: FileText, label: "Estate", path: "/estate" },
   { icon: Target, label: "Goals", path: "/goals" },
+  { icon: ClipboardCheck, label: "Review", path: "/review" },
 ];
 
 export function AppSidebar() {

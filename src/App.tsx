@@ -14,6 +14,7 @@ import Insurance from "./pages/Insurance";
 import Retirement from "./pages/Retirement";
 import EstatePlanning from "./pages/EstatePlanning";
 import GoalPlanning from "./pages/GoalPlanning";
+import AnnualReview from "./pages/AnnualReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/retirement" element={<Retirement />} />
             <Route path="/estate" element={<EstatePlanning />} />
             <Route path="/goals" element={<GoalPlanning />} />
+            <Route path="/review" element={<AnnualReview />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

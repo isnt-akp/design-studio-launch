@@ -1,17 +1,8 @@
 import { motion } from "framer-motion";
-import { Shield, AlertTriangle, Bell, MoreVertical, Plus, Heart, Car, Home, Plane, Users } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
+import { useFinanceStore, formatINR } from "@/store/financeStore";
 
 const fade = (delay = 0) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay } });
-
-const policies = [
-  { name: "Term Life Insurance", provider: "HDFC Click2Protect", icon: "🛡️", sum: "₹1.5 Cr", premium: 18500, renewal: "Aug 15, 2026", taxSection: "80C", status: "active", nominees: "Spouse (P), Mother (S)", riders: "AD ₹50L + CI ₹25L" },
-  { name: "Health Insurance (Self+Spouse)", provider: "Star Health", icon: "❤️", sum: "₹15L", premium: 22000, renewal: "Nov 10, 2026", taxSection: "80D", status: "active", nominees: "Self + Spouse", riders: "No co-pay, 50% NCB" },
-  { name: "Health Insurance (Parents)", provider: "Care Health", icon: "👴", sum: "₹10L", premium: 38000, renewal: "Dec 05, 2026", taxSection: "80D (Sr)", status: "active", nominees: "Father + Mother", riders: "Senior citizen plan" },
-  { name: "Super Top-Up", provider: "HDFC Ergo", icon: "⬆️", sum: "₹50L", premium: 6500, renewal: "Nov 10, 2026", taxSection: "80D", status: "active", nominees: "Self + Spouse", riders: "Deductible ₹15L" },
-  { name: "Motor Insurance", provider: "ICICI Lombard", icon: "🚗", sum: "IDV ₹12L", premium: 18000, renewal: "Jul 20, 2026", taxSection: "—", status: "active", nominees: "—", riders: "Zero dep + RSA" },
-  { name: "Personal Accident", provider: "TATA AIG", icon: "⚡", sum: "₹50L", premium: 3500, renewal: "Sep 01, 2026", taxSection: "80D", status: "active", nominees: "Spouse", riders: "Disability + Weekly benefit" },
-  { name: "Home Insurance", provider: "ICICI Lombard", icon: "🏠", sum: "Structure ₹85L + Contents ₹10L", premium: 8500, renewal: "Jan 15, 2027", taxSection: "—", status: "active", nominees: "—", riders: "Fire, quake, flood, theft" },
-];
 
 const badPolicy = {
   name: "LIC Jeevan Anand (Endowment)",
@@ -24,8 +15,13 @@ const badPolicy = {
 };
 
 const Insurance = () => {
+  const policies = useFinanceStore(s => s.insurancePolicies);
+  const accounts = useFinanceStore(s => s.accounts);
+  const payInsurancePremium = useFinanceStore(s => s.payInsurancePremium);
+  const total80D = useFinanceStore(s => s.total80D)();
+
   const totalPremium = policies.reduce((s, p) => s + p.premium, 0);
-  const total80D = policies.filter(p => p.taxSection.includes("80D")).reduce((s, p) => s + p.premium, 0);
+  const healthPolicies80D = policies.filter(p => p.taxSection.includes("80D"));
 
   return (
     <div className="space-y-6">
@@ -36,7 +32,6 @@ const Insurance = () => {
         </button>
       </div>
 
-      {/* Summary */}
       <motion.div {...fade()} className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Active Policies</p>
@@ -48,7 +43,8 @@ const Insurance = () => {
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">80D Deduction</p>
-          <p className="font-mono text-lg font-semibold text-accent-light">₹{total80D.toLocaleString("en-IN")}</p>
+          <p className="font-mono text-lg font-semibold text-accent-light">{formatINR(total80D)}</p>
+          <p className="text-[10px] text-muted-foreground">→ Auto-feeds Tax Engine</p>
         </div>
         <div className="glass-card rounded-card p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Total Health Cover</p>
@@ -57,11 +53,10 @@ const Insurance = () => {
         </div>
       </motion.div>
 
-      {/* Policy List */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">All Policies</h3>
         {policies.map((p, i) => (
-          <motion.div key={p.name} {...fade(0.05 + i * 0.03)} className="glass-card rounded-card p-4 space-y-2">
+          <motion.div key={p.id} {...fade(0.05 + i * 0.03)} className="glass-card rounded-card p-4 space-y-2">
             <div className="flex items-center gap-3">
               <span className="text-xl">{p.icon}</span>
               <div className="flex-1">
@@ -69,7 +64,7 @@ const Insurance = () => {
                 <p className="text-xs text-muted-foreground">{p.provider}</p>
               </div>
               <div className="text-right">
-                <p className="font-mono text-sm font-semibold text-foreground">{p.sum}</p>
+                <p className="font-mono text-sm font-semibold text-foreground">{p.sumAssured}</p>
                 <p className="text-xs text-muted-foreground">₹{p.premium.toLocaleString("en-IN")}/yr</p>
               </div>
             </div>
@@ -79,11 +74,16 @@ const Insurance = () => {
               <span>Nominees: <span className="text-foreground">{p.nominees}</span></span>
               {p.riders && <span>Riders: <span className="text-foreground">{p.riders}</span></span>}
             </div>
+            {p.taxSection.includes("80D") && (
+              <button onClick={() => payInsurancePremium(p.id, accounts[0]?.id || "")}
+                className="text-[10px] px-2 py-1 rounded bg-accent/20 text-accent-light hover:bg-accent/30 transition-colors">
+                Record Monthly Premium → Updates 80D in Tax Engine
+              </button>
+            )}
           </motion.div>
         ))}
       </div>
 
-      {/* Bad Policy Alert */}
       <motion.div {...fade(0.3)} className="glass-card rounded-card p-5 border border-warning/30 space-y-3">
         <div className="flex items-center gap-2">
           <AlertTriangle size={16} className="text-warning" />
