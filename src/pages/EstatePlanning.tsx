@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { FileText, AlertTriangle, Shield, Users, Key, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { useState } from "react";
+import { FileText, AlertTriangle, Shield, Users, Key, CheckCircle2, XCircle, Clock, Plus, Trash2, Edit3 } from "lucide-react";
+import { useFinanceStore, formatINR } from "@/store/financeStore";
 
 const fade = (delay = 0) => ({ initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.35, delay } });
 
@@ -11,14 +13,6 @@ const nominations = [
   { account: "HDFC Term Insurance", nominee: "Spouse (P), Mother (S)", status: "set" },
   { account: "SBI Savings A/C", nominee: "—", status: "missing" },
   { account: "Kuvera MF", nominee: "—", status: "missing" },
-];
-
-const digitalAssets = [
-  { platform: "Zerodha", access: "Email + TOTP", lastUpdated: "Oct 2025" },
-  { platform: "Kuvera", access: "Google login", lastUpdated: "Oct 2025" },
-  { platform: "Google Account", access: "Password + 2FA", lastUpdated: "Oct 2025" },
-  { platform: "iCloud", access: "Apple ID", lastUpdated: "Oct 2025" },
-  { platform: "1Password", access: "Master key in bank locker", lastUpdated: "Oct 2025" },
 ];
 
 const willDetails = {
@@ -40,9 +34,35 @@ const poaDetails = {
   reviewDate: "2028",
 };
 
+const physicalLockers = [
+  { location: "HDFC Bank Koramangala", contents: "Property docs, Will copy, Gold", lastAccessed: "Jan 2026" },
+  { location: "Home Safe", contents: "Passport, Aadhaar, PAN", lastAccessed: "Mar 2026" },
+];
+
 const EstatePlanning = () => {
+  const digitalAssets = useFinanceStore(s => s.digitalAssets);
+  const addDigitalAsset = useFinanceStore(s => s.addDigitalAsset);
+  const deleteDigitalAsset = useFinanceStore(s => s.deleteDigitalAsset);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newPlatform, setNewPlatform] = useState("");
+  const [newAccess, setNewAccess] = useState("");
+  const [newCategory, setNewCategory] = useState<"financial" | "social" | "utility" | "crypto" | "other">("financial");
+
   const setCount = nominations.filter(n => n.status === "set").length;
   const missingCount = nominations.filter(n => n.status === "missing").length;
+
+  const handleAddAsset = () => {
+    if (!newPlatform.trim()) return;
+    addDigitalAsset({
+      platform: newPlatform,
+      accessMethod: newAccess,
+      lastUpdated: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+      category: newCategory,
+    });
+    setNewPlatform("");
+    setNewAccess("");
+    setShowAddForm(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -111,6 +131,23 @@ const EstatePlanning = () => {
               <p className="text-xs text-destructive font-semibold">⚠️ Fix {missingCount} missing nominations immediately</p>
             </motion.div>
           )}
+
+          {/* Physical Lockers */}
+          <h3 className="text-sm font-semibold text-foreground pt-2">Physical Document Lockers</h3>
+          <motion.div {...fade(0.15)} className="glass-card rounded-card p-4 space-y-2">
+            {physicalLockers.map((locker) => (
+              <div key={locker.location} className="flex items-start gap-3 py-2 border-b border-border last:border-0">
+                <Key size={14} className="text-secondary shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{locker.location}</p>
+                  <p className="text-xs text-muted-foreground">{locker.contents}</p>
+                </div>
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <Clock size={10} /> {locker.lastAccessed}
+                </span>
+              </div>
+            ))}
+          </motion.div>
         </div>
 
         {/* PoA + Digital Assets */}
@@ -129,17 +166,55 @@ const EstatePlanning = () => {
             </div>
           </motion.div>
 
-          <h3 className="text-sm font-semibold text-foreground pt-2">Digital Asset Inventory</h3>
+          <div className="flex items-center justify-between pt-2">
+            <h3 className="text-sm font-semibold text-foreground">Digital Asset Inventory</h3>
+            <button onClick={() => setShowAddForm(!showAddForm)}
+              className="h-7 px-3 rounded-button bg-primary text-primary-foreground text-xs font-medium flex items-center gap-1 hover:opacity-90 transition-opacity">
+              <Plus size={12} /> Add
+            </button>
+          </div>
+
+          {showAddForm && (
+            <motion.div {...fade()} className="glass-card rounded-card p-4 space-y-3">
+              <input value={newPlatform} onChange={e => setNewPlatform(e.target.value)} placeholder="Platform name"
+                className="w-full h-9 px-3 text-sm bg-muted rounded-button text-foreground outline-none placeholder:text-muted-foreground" />
+              <input value={newAccess} onChange={e => setNewAccess(e.target.value)} placeholder="Access method (e.g., Email + TOTP)"
+                className="w-full h-9 px-3 text-sm bg-muted rounded-button text-foreground outline-none placeholder:text-muted-foreground" />
+              <select value={newCategory} onChange={e => setNewCategory(e.target.value as typeof newCategory)}
+                className="w-full h-9 px-3 bg-muted rounded-button text-foreground text-sm outline-none">
+                <option value="financial">Financial</option>
+                <option value="social">Social</option>
+                <option value="utility">Utility</option>
+                <option value="crypto">Crypto</option>
+                <option value="other">Other</option>
+              </select>
+              <button onClick={handleAddAsset}
+                className="w-full h-8 rounded-button bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-opacity">
+                Save Digital Asset
+              </button>
+            </motion.div>
+          )}
+
           <motion.div {...fade(0.15)} className="glass-card rounded-card p-4 space-y-1">
             <p className="text-xs text-muted-foreground mb-2">Master doc in bank locker + copy with executor</p>
             {digitalAssets.map((d) => (
-              <div key={d.platform} className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm">
+              <div key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm">
                 <div>
                   <p className="text-foreground">{d.platform}</p>
-                  <p className="text-xs text-muted-foreground">{d.access}</p>
+                  <p className="text-xs text-muted-foreground">{d.accessMethod}</p>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock size={10} /> {d.lastUpdated}
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    d.category === "financial" ? "bg-primary/20 text-primary-light" :
+                    d.category === "crypto" ? "bg-warning/20 text-warning" :
+                    "bg-muted text-muted-foreground"
+                  }`}>{d.category}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock size={10} /> {d.lastUpdated}
+                  </span>
+                  <button onClick={() => deleteDigitalAsset(d.id)} className="text-muted-foreground hover:text-destructive">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             ))}

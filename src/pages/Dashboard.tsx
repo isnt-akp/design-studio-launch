@@ -34,12 +34,22 @@ const Dashboard = () => {
   const totalReceivables = useFinanceStore(s => s.totalReceivables)();
   const totalPayables = useFinanceStore(s => s.totalPayables)();
 
-  // Use live data for current month in trend
-  const trend = netWorthTrendData.map((t, i) =>
-    i === netWorthTrendData.length - 1 ? { ...t, assets: totalAssets, liabilities: totalLiabilities, netWorth: nw } : t
-  );
+  // Historical trend from snapshots — NO hardcoded overrides
+  const trend = netWorthTrendData.map(t => ({
+    month: t.month,
+    assets: t.assets,
+    liabilities: t.liabilities,
+    netWorth: t.netWorth,
+  }));
 
-  const prevNetWorth = trend[trend.length - 2]?.netWorth || nw;
+  // Append current live month if not already in snapshots
+  const currentMonth = new Date().toLocaleString("en-US", { month: "short" });
+  const hasCurrentMonth = trend.some(t => t.month === currentMonth);
+  if (!hasCurrentMonth) {
+    trend.push({ month: currentMonth, assets: totalAssets, liabilities: totalLiabilities, netWorth: nw });
+  }
+
+  const prevNetWorth = trend.length >= 2 ? trend[trend.length - 2]?.netWorth : nw;
   const monthlyChange = nw - prevNetWorth;
   const monthlyChangePct = prevNetWorth ? ((monthlyChange / prevNetWorth) * 100).toFixed(1) : "0";
 
@@ -47,7 +57,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Net Worth Dashboard</h1>
-        <span className="text-sm text-muted-foreground">As of Mar 2026</span>
+        <span className="text-sm text-muted-foreground">As of {currentMonth} 2026</span>
       </div>
 
       {/* Hero: Net Worth */}
@@ -150,7 +160,7 @@ const Dashboard = () => {
                 <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: assetColors[i % assetColors.length] }} />
                 <span className="flex-1 text-foreground">{a.category}</span>
                 <span className="font-mono text-muted-foreground">{formatINR(a.value, true)}</span>
-                <span className="font-mono text-muted-foreground w-10 text-right">{Math.round((a.value / totalAssets) * 100)}%</span>
+                <span className="font-mono text-muted-foreground w-10 text-right">{totalAssets > 0 ? Math.round((a.value / totalAssets) * 100) : 0}%</span>
               </div>
             ))}
           </div>
@@ -163,7 +173,7 @@ const Dashboard = () => {
               <CreditCard size={14} className="text-destructive" /> Liabilities
             </h3>
             {liabilities.map((l) => (
-              <div key={l.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+              <div key={l.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div>
                   <p className="text-sm text-foreground">{l.category}</p>
                   <p className="text-xs text-muted-foreground">{l.label}{l.rate ? ` · ${l.rate}%` : ""}</p>
