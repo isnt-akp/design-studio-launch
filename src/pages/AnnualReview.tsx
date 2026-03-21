@@ -38,7 +38,13 @@ const reviewChecklist: ReviewItem[] = [
 ];
 
 const AnnualReview = () => {
-  const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [completed, setCompleted] = useState<Set<string>>(() => {
+    // Persist checklist state in localStorage
+    try {
+      const saved = localStorage.getItem("arthavault_review_completed");
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
   const nw = useFinanceStore(s => s.netWorth)();
   const sr = useFinanceStore(s => s.savingsRate)();
 
@@ -46,6 +52,7 @@ const AnnualReview = () => {
     setCompleted(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
+      localStorage.setItem("arthavault_review_completed", JSON.stringify([...next]));
       return next;
     });
   };
@@ -55,12 +62,23 @@ const AnnualReview = () => {
   const totalCount = reviewChecklist.length;
   const pct = Math.round((completedCount / totalCount) * 100);
 
+  // Check if April 1st is approaching
+  const now = new Date();
+  const isReviewSeason = now.getMonth() >= 2 && now.getMonth() <= 3; // March-April
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">Annual Financial Review</h1>
         <span className="text-sm text-muted-foreground flex items-center gap-1"><Calendar size={14} /> April 1st Checklist</span>
       </div>
+
+      {isReviewSeason && (
+        <motion.div {...fade()} className="p-3 bg-warning/10 rounded-card border border-warning/30 flex items-center gap-2">
+          <AlertTriangle size={16} className="text-warning shrink-0" />
+          <p className="text-xs text-warning">Annual review season is here! Complete all items before April 15th to start FY 2026-27 organized.</p>
+        </motion.div>
+      )}
 
       {/* Progress */}
       <motion.div {...fade()} className="glass-card rounded-card p-5 space-y-3">
